@@ -31,18 +31,25 @@ import {
   Timestamp
 } from 'firebase/firestore';
 
-```javascript
 // --- FIREBASE CONFIGURATION ---
-// Now connecting to environment variables (secure)
+// We are hardcoding these to ensure they work on GitHub Pages
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyARypVAjLuFlXSuqU-tYNj2L-dLgLq2H74",
+  authDomain: "productivity-git.firebaseapp.com",
+  projectId: "productivity-git",
+  storageBucket: "productivity-git.firebasestorage.app",
+  messagingSenderId: "874339373522",
+  appId: "1:874339373522:web:939bfa39737dc81fcd380b",
+  measurementId: "G-RWZJGDK0V9"
 };
-```
+
+// Sanitize appId to prevent path segment errors
+const appId = (firebaseConfig.appId || 'default-app').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // --- UTILITIES ---
 
