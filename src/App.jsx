@@ -34,8 +34,14 @@ import {
   Timestamp
 } from 'firebase/firestore';
 
-// --- FIREBASE CONFIGURATION ---
-// REPLACE THIS WITH YOUR OWN CONFIG FROM THE FIREBASE CONSOLE
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyARypVAjLuFlXSuqU-tYNj2L-dLgLq2H74",
   authDomain: "productivity-git.firebaseapp.com",
@@ -45,13 +51,9 @@ const firebaseConfig = {
   appId: "1:874339373522:web:939bfa39737dc81fcd380b",
   measurementId: "G-RWZJGDK0V9"
 };
-// Sanitize appId to prevent path segment errors (replace slashes with underscores)
-const appId = (typeof __app_id !== 'undefined' ? __app_id : 'default-app').replace(/[^a-zA-Z0-9_-]/g, '_');
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 const analytics = getAnalytics(app);
 
 // --- UTILITIES ---
