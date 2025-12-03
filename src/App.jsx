@@ -6,7 +6,7 @@ import {
   ChevronRight, ChevronLeft, GripVertical,
   LogOut, User, Trophy, Flame, Target,
   Calendar, Download, Upload, Music, Sliders,
-  Headphones, Radio, CloudRain, Maximize2, LogIn, Wind
+  Headphones, Radio, CloudRain, Maximize2, LogIn
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -707,7 +707,7 @@ const BreathingBox = () => {
 
       <div className="relative z-10 flex flex-col items-center">
         <h2 className="text-2xl font-bold text-slate-700 mb-12 flex items-center gap-2">
-          <Wind className="text-cyan-500" /> Box Breathing
+          <CloudRain className="text-cyan-500" /> Box Breathing
         </h2>
 
         <div className="relative flex items-center justify-center w-80 h-80">
@@ -872,7 +872,7 @@ const App = () => {
           <NavButton icon={GripVertical} label="Kanban" active={activeTab === 'kanban'} onClick={() => setActiveTab('kanban')} />
           <NavButton icon={FileText} label="Notes" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} />
           <NavButton icon={Music} label="Sounds" active={activeTab === 'sounds'} onClick={() => setActiveTab('sounds')} />
-          <NavButton icon={Wind} label="Breathing" active={activeTab === 'breathing'} onClick={() => setActiveTab('breathing')} />
+          <NavButton icon={CloudRain} label="Breathing" active={activeTab === 'breathing'} onClick={() => setActiveTab('breathing')} />
         </nav>
         <div className="mt-auto mb-4">
           <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shadow-sm overflow-hidden" title={`User: ${user.email}`}>
