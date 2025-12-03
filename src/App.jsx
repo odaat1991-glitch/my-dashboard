@@ -1,31 +1,31 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  Play, Pause, RotateCcw, Volume2, VolumeX, 
-  CheckSquare, Plus, X, Trash2, Save, 
-  Code, FileText, Activity, Layout, 
+import {
+  Play, Pause, RotateCcw, Volume2, VolumeX,
+  CheckSquare, Plus, X, Trash2, Save,
+  Code, FileText, Activity, Layout,
   ChevronRight, ChevronLeft, GripVertical,
   LogOut, User, Trophy, Flame, Target,
   Calendar, Download, Upload, Music, Sliders,
-  Headphones, Radio, CloudRain, Maximize2, LogIn
+  Headphones, Radio, CloudRain, Maximize2, LogIn, Wind
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
+import {
+  getAuth,
   signInWithPopup,
   GoogleAuthProvider,
-  onAuthStateChanged, 
-  signOut 
+  onAuthStateChanged,
+  signOut
 } from 'firebase/auth';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  orderBy, 
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
   where,
   serverTimestamp,
   Timestamp
@@ -62,16 +62,16 @@ const playNotificationSound = (volume = 0.5, type = 'complete') => {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
-    
+
     osc.connect(gainNode);
     gainNode.connect(ctx.destination);
 
     if (type === 'complete') {
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
-      osc.frequency.linearRampToValueAtTime(659.25, ctx.currentTime + 0.1); 
-      osc.frequency.linearRampToValueAtTime(783.99, ctx.currentTime + 0.2); 
-      osc.frequency.linearRampToValueAtTime(1046.50, ctx.currentTime + 0.3); 
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+      osc.frequency.linearRampToValueAtTime(783.99, ctx.currentTime + 0.2);
+      osc.frequency.linearRampToValueAtTime(1046.50, ctx.currentTime + 0.3);
       gainNode.gain.setValueAtTime(volume, ctx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
       osc.start(ctx.currentTime);
@@ -115,7 +115,7 @@ class AmbientGenerator {
       if (type === 'white') {
         output[i] = white;
       } else if (type === 'pink') {
-        const b = [0,0,0,0,0,0,0];
+        const b = [0, 0, 0, 0, 0, 0, 0];
         b[0] = 0.99886 * b[0] + white * 0.0555179;
         b[1] = 0.99332 * b[1] + white * 0.0750759;
         b[2] = 0.96900 * b[2] + white * 0.1538520;
@@ -125,9 +125,9 @@ class AmbientGenerator {
         output[i] = b[0] + b[1] + b[2] + b[3] + b[4] + b[5] + white * 0.5362;
         output[i] *= 0.11;
       } else if (type === 'brown') {
-        const lastOut = i > 0 ? output[i-1] : 0;
+        const lastOut = i > 0 ? output[i - 1] : 0;
         output[i] = (lastOut + (0.02 * white)) / 1.02;
-        output[i] *= 3.5; 
+        output[i] *= 3.5;
       }
     }
 
@@ -159,22 +159,22 @@ class AmbientGenerator {
   toggle(type, volume) {
     this.volumes[type] = volume;
     if (type === 'chimes') {
-        if (this.intervals.chimes) {
-            clearInterval(this.intervals.chimes);
-            delete this.intervals.chimes;
-        }
-        if (volume > 0) {
-            this.init();
-            if (this.ctx.state === 'suspended') this.ctx.resume();
-            this.intervals.chimes = setInterval(() => {
-                if (Math.random() < 0.3) this.playChime(this.volumes.chimes);
-            }, 2000);
-            this.playChime(volume);
-        }
-        return;
+      if (this.intervals.chimes) {
+        clearInterval(this.intervals.chimes);
+        delete this.intervals.chimes;
+      }
+      if (volume > 0) {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.intervals.chimes = setInterval(() => {
+          if (Math.random() < 0.3) this.playChime(this.volumes.chimes);
+        }, 2000);
+        this.playChime(volume);
+      }
+      return;
     }
     if (this.nodes[type]) {
-      try { this.nodes[type].source.stop(); this.nodes[type].gain.disconnect(); } catch(e) {}
+      try { this.nodes[type].source.stop(); this.nodes[type].gain.disconnect(); } catch (e) { }
       delete this.nodes[type];
     }
     if (volume > 0) {
@@ -193,13 +193,13 @@ class AmbientGenerator {
   setVolume(type, volume) {
     this.volumes[type] = volume;
     if (type === 'chimes') {
-        if (volume <= 0 && this.intervals.chimes) {
-            clearInterval(this.intervals.chimes);
-            delete this.intervals.chimes;
-        } else if (volume > 0 && !this.intervals.chimes) {
-            this.toggle('chimes', volume);
-        }
-        return;
+      if (volume <= 0 && this.intervals.chimes) {
+        clearInterval(this.intervals.chimes);
+        delete this.intervals.chimes;
+      } else if (volume > 0 && !this.intervals.chimes) {
+        this.toggle('chimes', volume);
+      }
+      return;
     }
     if (this.nodes[type]) {
       this.nodes[type].gain.gain.linearRampToValueAtTime(volume, this.ctx.currentTime + 0.1);
@@ -209,7 +209,7 @@ class AmbientGenerator {
   }
 
   stopAll() {
-    Object.keys(this.nodes).forEach(type => { try { this.nodes[type].source.stop(); } catch(e){} });
+    Object.keys(this.nodes).forEach(type => { try { this.nodes[type].source.stop(); } catch (e) { } });
     Object.keys(this.intervals).forEach(type => { clearInterval(this.intervals[type]); });
     this.nodes = {};
     this.intervals = {};
@@ -280,15 +280,15 @@ const MiniTimer = ({ timeLeft, isActive, mode, toggleTimer, onExpand }) => {
   };
   return (
     <div className="fixed bottom-6 right-6 bg-white p-3 pr-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 flex items-center gap-4 z-50 animate-bounce-in">
-      <div 
+      <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${mode === 'work' ? 'bg-indigo-100 text-indigo-600' : 'bg-teal-100 text-teal-600'}`}
         onClick={toggleTimer}
       >
         {isActive ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
       </div>
       <div className="flex flex-col cursor-pointer" onClick={onExpand}>
-         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">{mode}</span>
-         <span className="text-xl font-mono font-bold text-slate-700 leading-none">{formatTime(timeLeft)}</span>
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">{mode}</span>
+        <span className="text-xl font-mono font-bold text-slate-700 leading-none">{formatTime(timeLeft)}</span>
       </div>
       <button onClick={onExpand} className="p-2 text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">
         <Maximize2 size={16} />
@@ -320,7 +320,7 @@ const Pomodoro = ({ timeLeft, isActive, mode, toggleTimer, resetTimer, switchMod
             <button onClick={() => switchMode('break')} className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${mode === 'break' ? 'bg-white text-teal-600 shadow-sm scale-105' : 'text-slate-400 hover:text-slate-600'}`}>Rest</button>
           </div>
           <div className="relative mb-8 group cursor-default">
-             <svg className="transform -rotate-90 w-80 h-80">
+            <svg className="transform -rotate-90 w-80 h-80">
               <circle cx="160" cy="160" r={radius} stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-50" />
               <circle cx="160" cy="160" r={radius} stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-all duration-1000 ease-linear ${mode === 'work' ? 'text-indigo-500' : 'text-teal-500'}`} />
             </svg>
@@ -375,7 +375,7 @@ const KanbanColumn = ({ title, status, tasks, user, onDrop, onDragStart }) => {
           <div key={task.id} draggable onDragStart={(e) => onDragStart(e, task.id)} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-move hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group relative">
             <p className="text-slate-700 font-medium text-sm leading-relaxed">{task.content}</p>
             <div className="flex justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'kanban', task.id))} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={14} /></button>
+              <button onClick={() => deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'kanban', task.id))} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -408,8 +408,8 @@ const Kanban = ({ user }) => {
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <form onSubmit={addTask} className="flex gap-3">
           <div className="flex-1 relative">
-             <Plus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-             <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a new task..." className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-slate-700" />
+            <Plus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a new task..." className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-slate-700" />
           </div>
           <button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-medium shadow-sm transition-all hover:shadow-md">Add Task</button>
         </form>
@@ -449,7 +449,7 @@ const Notes = ({ user }) => {
   const handleExport = () => {
     if (!activeNoteId) return;
     const element = document.createElement("a");
-    const file = new Blob([activeNote.content], {type: 'text/markdown'});
+    const file = new Blob([activeNote.content], { type: 'text/markdown' });
     element.href = URL.createObjectURL(file);
     element.download = `${activeNote.title || 'untitled'}.md`;
     document.body.appendChild(element);
@@ -474,9 +474,9 @@ const Notes = ({ user }) => {
     <div className="h-full flex bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       <div className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col">
         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-white">
-          <h2 className="font-semibold text-slate-700 flex items-center gap-2"><FileText size={18} className="text-indigo-500"/> Library</h2>
+          <h2 className="font-semibold text-slate-700 flex items-center gap-2"><FileText size={18} className="text-indigo-500" /> Library</h2>
           <div className="flex gap-1">
-             <input type="file" ref={fileInputRef} onChange={handleImportFile} className="hidden" accept=".md,.txt" />
+            <input type="file" ref={fileInputRef} onChange={handleImportFile} className="hidden" accept=".md,.txt" />
             <button onClick={handleImportClick} className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500 hover:text-indigo-600 transition-colors" title="Import Markdown"><Upload size={16} /></button>
             <button onClick={createNote} className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500 hover:text-indigo-600 transition-colors"><Plus size={16} /></button>
           </div>
@@ -497,12 +497,12 @@ const Notes = ({ user }) => {
         {activeNoteId ? (
           <>
             <div className="px-8 py-4 border-b border-slate-100 flex items-center justify-between">
-               <div className="flex-1 mr-4"><input value={activeNote.title} onChange={(e) => updateActiveNote('title', e.target.value)} className="text-xl font-bold text-slate-800 outline-none w-full bg-transparent placeholder:text-slate-300" placeholder="Untitled Note" /></div>
-               <div className="flex items-center gap-2">
-                 <button onClick={handleExport} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors" title="Export to Markdown"><Download size={18} /></button>
-                 <div className="h-4 w-px bg-slate-200 mx-1"></div>
-                 <button onClick={() => updateActiveNote('isCode', !activeNote.isCode)} className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold tracking-wide transition-colors ${activeNote.isCode ? 'bg-slate-800 text-green-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{activeNote.isCode ? <><Code size={14} /> CODE</> : <><FileText size={14} /> TEXT</>}</button>
-               </div>
+              <div className="flex-1 mr-4"><input value={activeNote.title} onChange={(e) => updateActiveNote('title', e.target.value)} className="text-xl font-bold text-slate-800 outline-none w-full bg-transparent placeholder:text-slate-300" placeholder="Untitled Note" /></div>
+              <div className="flex items-center gap-2">
+                <button onClick={handleExport} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors" title="Export to Markdown"><Download size={18} /></button>
+                <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                <button onClick={() => updateActiveNote('isCode', !activeNote.isCode)} className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs font-bold tracking-wide transition-colors ${activeNote.isCode ? 'bg-slate-800 text-green-400' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{activeNote.isCode ? <><Code size={14} /> CODE</> : <><FileText size={14} /> TEXT</>}</button>
+              </div>
             </div>
             <textarea className={`flex-1 w-full p-8 outline-none resize-none leading-relaxed text-base ${activeNote.isCode ? 'font-mono bg-[#1e1e1e] text-[#d4d4d4]' : 'bg-white text-slate-600 selection:bg-indigo-100'}`} value={activeNote.content} onChange={(e) => updateActiveNote('content', e.target.value)} placeholder={activeNote.isCode ? '// Type code snippet here...' : 'Start writing...'} spellCheck={!activeNote.isCode} />
           </>
@@ -605,7 +605,7 @@ const HabitTracker = ({ user }) => {
                       <div className="flex items-center gap-2 mt-2"><div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: `${progress}%` }} /></div><span className="text-xs text-slate-400">{Math.round(progress)}% weekly</span></div>
                     </td>
                     <td className="p-6">
-                      <div className={`flex items-center gap-2 font-bold ${streak > 2 ? 'text-orange-500' : 'text-slate-400'}`}><Flame size={20} className={`${streak > 2 ? 'fill-orange-500 animate-pulse' : ''}`}/>{streak} days</div>
+                      <div className={`flex items-center gap-2 font-bold ${streak > 2 ? 'text-orange-500' : 'text-slate-400'}`}><Flame size={20} className={`${streak > 2 ? 'fill-orange-500 animate-pulse' : ''}`} />{streak} days</div>
                     </td>
                     {dates.map(date => {
                       const isCompleted = habit.history?.[date];
@@ -640,22 +640,104 @@ const FocusSounds = () => {
   return (
     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-8">
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 flex flex-col">
-        <div className="mb-8"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><Sliders size={24} className="text-indigo-600"/> Ambient Mixer</h2><p className="text-slate-400 mt-2">Mix your own soundscape using generated noise colors.</p></div>
+        <div className="mb-8"><h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><Sliders size={24} className="text-indigo-600" /> Ambient Mixer</h2><p className="text-slate-400 mt-2">Mix your own soundscape using generated noise colors.</p></div>
         <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-           <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-pink-400"></div> Rain (Pink Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.pink * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.pink} onChange={(e) => toggleVolume('pink', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-pink-500" /></div>
-           <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-indigo-400"></div> Wind Chimes</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.chimes * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.chimes} onChange={(e) => toggleVolume('chimes', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-indigo-500" /></div>
-           <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-700"></div> River (Brown Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.brown * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.brown} onChange={(e) => toggleVolume('brown', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-amber-700" /></div>
-           <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-slate-400"></div> Static (White Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.white * 100)}%</span></div><input type="range" min="0" max="0.1" step="0.01" value={volumes.white} onChange={(e) => toggleVolume('white', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-slate-400" /></div>
+          <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-pink-400"></div> Rain (Pink Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.pink * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.pink} onChange={(e) => toggleVolume('pink', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-pink-500" /></div>
+          <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-indigo-400"></div> Wind Chimes</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.chimes * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.chimes} onChange={(e) => toggleVolume('chimes', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-indigo-500" /></div>
+          <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-700"></div> River (Brown Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.brown * 100)}%</span></div><input type="range" min="0" max="0.5" step="0.01" value={volumes.brown} onChange={(e) => toggleVolume('brown', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-amber-700" /></div>
+          <div className="bg-slate-50 rounded-2xl p-6"><div className="flex justify-between mb-4"><span className="font-semibold text-slate-700 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-slate-400"></div> Static (White Noise)</span><span className="text-slate-400 font-mono text-sm">{Math.round(volumes.white * 100)}%</span></div><input type="range" min="0" max="0.1" step="0.01" value={volumes.white} onChange={(e) => toggleVolume('white', parseFloat(e.target.value))} className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-slate-400" /></div>
         </div>
       </div>
       <div className="flex flex-col gap-6">
-         <div className="bg-black rounded-3xl shadow-xl overflow-hidden relative group h-[400px] border border-white/10">
-            <iframe width="100%" height="100%" scrolling="no" frameBorder="no" allow="autoplay" src={`https://w.soundcloud.com/player/?url=${encodeURIComponent('https://soundcloud.com/chillhopdotcom/sets/lofihiphop')}&color=%236366f1&auto_play=false&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true`} className="h-full w-full" title="Chillhop SoundCloud"></iframe>
-         </div>
-         <div className="bg-indigo-600 rounded-3xl p-8 text-white shadow-lg flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
-             <div className="absolute inset-0 opacity-10"><svg width="100%" height="100%"><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1"/></pattern><rect width="100%" height="100%" fill="url(#grid)" /></svg></div>
-             <div className="relative z-10"><Headphones size={48} className="mb-4 mx-auto opacity-80" /><h3 className="text-2xl font-bold mb-2">Focus Mode Active</h3><p className="text-indigo-200 max-w-xs mx-auto">Combine the ambient noise on the left with the music above for deep focus.</p></div>
-         </div>
+        <div className="bg-black rounded-3xl shadow-xl overflow-hidden relative group h-[400px] border border-white/10">
+          <iframe width="100%" height="100%" scrolling="no" frameBorder="no" allow="autoplay" src={`https://w.soundcloud.com/player/?url=${encodeURIComponent('https://soundcloud.com/chillhopdotcom/sets/lofihiphop')}&color=%236366f1&auto_play=false&hide_related=false&show_comments=false&show_user=true&show_reposts=false&show_teaser=true&visual=true`} className="h-full w-full" title="Chillhop SoundCloud"></iframe>
+        </div>
+        <div className="bg-indigo-600 rounded-3xl p-8 text-white shadow-lg flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10"><svg width="100%" height="100%"><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" /></pattern><rect width="100%" height="100%" fill="url(#grid)" /></svg></div>
+          <div className="relative z-10"><Headphones size={48} className="mb-4 mx-auto opacity-80" /><h3 className="text-2xl font-bold mb-2">Focus Mode Active</h3><p className="text-indigo-200 max-w-xs mx-auto">Combine the ambient noise on the left with the music above for deep focus.</p></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BreathingBox = () => {
+  const [phase, setPhase] = useState('inhale'); // inhale, hold-in, exhale, hold-out
+  const [text, setText] = useState('Breathe In');
+
+  useEffect(() => {
+    let timeout;
+
+    const runCycle = () => {
+      // Inhale (4s)
+      setPhase('inhale');
+      setText('Breathe In');
+
+      timeout = setTimeout(() => {
+        // Hold (4s)
+        setPhase('hold-in');
+        setText('Hold');
+
+        timeout = setTimeout(() => {
+          // Exhale (4s)
+          setPhase('exhale');
+          setText('Breathe Out');
+
+          timeout = setTimeout(() => {
+            // Hold (4s)
+            setPhase('hold-out');
+            setText('Hold');
+
+            timeout = setTimeout(() => {
+              runCycle();
+            }, 4000);
+          }, 4000);
+        }, 4000);
+      }, 4000);
+    };
+
+    runCycle();
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div className="h-full flex flex-col items-center justify-center bg-white rounded-3xl shadow-sm border border-slate-100 p-8 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-blue-50 opacity-50"></div>
+
+      <div className="relative z-10 flex flex-col items-center">
+        <h2 className="text-2xl font-bold text-slate-700 mb-12 flex items-center gap-2">
+          <Wind className="text-cyan-500" /> Box Breathing
+        </h2>
+
+        <div className="relative flex items-center justify-center w-80 h-80">
+          {/* Outer Guide Circle */}
+          <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+
+          {/* Animated Circle */}
+          <div
+            className={`
+              w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-xl shadow-cyan-200
+              flex items-center justify-center transition-all duration-[4000ms] ease-in-out
+              ${phase === 'inhale' ? 'scale-100 opacity-100' : ''}
+              ${phase === 'hold-in' ? 'scale-100 opacity-100' : ''}
+              ${phase === 'exhale' ? 'scale-50 opacity-80' : ''}
+              ${phase === 'hold-out' ? 'scale-50 opacity-80' : ''}
+            `}
+          >
+            <span className="text-4xl font-bold text-white tracking-wider animate-pulse">
+              {text}
+            </span>
+          </div>
+
+          {/* Orbiting Particle for Visual Timing (Optional polish) */}
+          <div className={`absolute w-full h-full rounded-full border-2 border-transparent border-t-cyan-300 animate-spin-slow opacity-30`}></div>
+        </div>
+
+        <p className="mt-12 text-slate-400 max-w-md text-center">
+          Follow the rhythm: Inhale for 4s, Hold for 4s, Exhale for 4s, Hold for 4s.
+          This technique helps reduce stress and improve focus.
+        </p>
       </div>
     </div>
   );
@@ -673,7 +755,7 @@ const App = () => {
   const BREAK_TIME = 5 * 60;
   const [timeLeft, setTimeLeft] = useState(WORK_TIME);
   const [isActive, setIsActive] = useState(false);
-  const [mode, setMode] = useState('work'); 
+  const [mode, setMode] = useState('work');
   const [volume, setVolume] = useState(0.5);
   const [showConfetti, setShowConfetti] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
@@ -755,11 +837,11 @@ const App = () => {
           </div>
           <h1 className="text-3xl font-bold text-slate-800">Welcome Back</h1>
           <p className="text-slate-500 max-w-xs mx-auto">Sign in to access your dashboard, tasks, and habits.</p>
-          <button 
+          <button
             onClick={handleLogin}
             className="flex items-center justify-center gap-3 px-8 py-3 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 text-slate-700 font-medium w-full max-w-xs mx-auto"
           >
-            <LogIn size={20} className="text-indigo-600"/>
+            <LogIn size={20} className="text-indigo-600" />
             Sign in with Google
           </button>
         </div>
@@ -774,6 +856,7 @@ const App = () => {
       case 'notes': return <Notes user={user} />;
       case 'habits': return <HabitTracker user={user} />;
       case 'sounds': return <FocusSounds />;
+      case 'breathing': return <BreathingBox />;
       default: return null;
     }
   };
@@ -789,11 +872,12 @@ const App = () => {
           <NavButton icon={GripVertical} label="Kanban" active={activeTab === 'kanban'} onClick={() => setActiveTab('kanban')} />
           <NavButton icon={FileText} label="Notes" active={activeTab === 'notes'} onClick={() => setActiveTab('notes')} />
           <NavButton icon={Music} label="Sounds" active={activeTab === 'sounds'} onClick={() => setActiveTab('sounds')} />
+          <NavButton icon={Wind} label="Breathing" active={activeTab === 'breathing'} onClick={() => setActiveTab('breathing')} />
         </nav>
         <div className="mt-auto mb-4">
-           <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shadow-sm overflow-hidden" title={`User: ${user.email}`}>
-             {user.photoURL ? <img src={user.photoURL} alt="User" className="w-full h-full object-cover" /> : <User size={20} />}
-           </div>
+          <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer shadow-sm overflow-hidden" title={`User: ${user.email}`}>
+            {user.photoURL ? <img src={user.photoURL} alt="User" className="w-full h-full object-cover" /> : <User size={20} />}
+          </div>
         </div>
         <button onClick={() => signOut(auth)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Sign Out"><LogOut size={20} /></button>
       </div>
