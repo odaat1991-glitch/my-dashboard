@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Play, Pause, RotateCcw, Volume2, VolumeX,
   CheckSquare, Plus, X, Trash2, Save,
@@ -6,7 +6,7 @@ import {
   ChevronRight, ChevronLeft, GripVertical,
   LogOut, User, Trophy, Flame, Target,
   Calendar, Download, Upload, Music, Sliders,
-  Headphones, Radio, CloudRain, Maximize2, LogIn
+  Headphones, Radio, CloudRain, Maximize2, LogIn, Zap, Clock, Home, Moon, Power
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -360,9 +360,9 @@ const Pomodoro = ({ timeLeft, isActive, mode, toggleTimer, resetTimer, switchMod
 
 const KanbanColumn = ({ title, status, tasks, user, onDrop, onDragStart }) => {
   const handleDragOver = (e) => e.preventDefault();
-  const borderColor = { 'todo': 'border-blue-500', 'doing': 'border-amber-500', 'done': 'border-emerald-500' }[status] || 'border-slate-300';
-  const headerBg = { 'todo': 'bg-blue-50', 'doing': 'bg-amber-50', 'done': 'bg-emerald-50' }[status] || 'bg-slate-50';
-  const textColor = { 'todo': 'text-blue-700', 'doing': 'text-amber-700', 'done': 'text-emerald-700' }[status] || 'text-slate-700';
+  const borderColor = { 'todo': 'border-blue-500', 'doing': 'border-amber-500', 'done': 'border-emerald-500', 'waiting': 'border-purple-500', 'not-doing': 'border-red-500' }[status] || 'border-slate-300';
+  const headerBg = { 'todo': 'bg-blue-50', 'doing': 'bg-amber-50', 'done': 'bg-emerald-50', 'waiting': 'bg-purple-50', 'not-doing': 'bg-red-50' }[status] || 'bg-slate-50';
+  const textColor = { 'todo': 'text-blue-700', 'doing': 'text-amber-700', 'done': 'text-emerald-700', 'waiting': 'text-purple-700', 'not-doing': 'text-red-700' }[status] || 'text-slate-700';
 
   return (
     <div className={`flex-1 bg-slate-50/50 rounded-xl flex flex-col min-h-[500px] border-t-4 ${borderColor} shadow-[0_8px_30px_rgb(0,0,0,0.04)]`} onDragOver={handleDragOver} onDrop={(e) => onDrop(e, status)}>
@@ -384,9 +384,11 @@ const KanbanColumn = ({ title, status, tasks, user, onDrop, onDragStart }) => {
   );
 };
 
-const Kanban = ({ user }) => {
+const Kanban = ({ user, energyLevel }) => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
+  const [newEnergy, setNewEnergy] = useState('medium');
+
   useEffect(() => {
     if (!user) return;
     const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'kanban'));
@@ -395,14 +397,26 @@ const Kanban = ({ user }) => {
   const addTask = async (e) => {
     e.preventDefault();
     if (!newTask.trim()) return;
-    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'kanban'), { content: newTask, status: 'todo', createdAt: serverTimestamp() });
+    await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'kanban'), {
+      content: newTask,
+      status: 'todo',
+      energy: newEnergy,
+      createdAt: serverTimestamp()
+    });
     setNewTask('');
+    setNewEnergy('medium');
   };
   const handleDragStart = (e, id) => e.dataTransfer.setData('taskId', id);
   const handleDrop = async (e, newStatus) => {
     const id = e.dataTransfer.getData('taskId');
     if (id) await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'kanban', id), { status: newStatus });
   };
+
+  const filteredTasks = tasks.filter(task => {
+    if (energyLevel <= 4 && task.energy === 'high') return false;
+    return true;
+  });
+
   return (
     <div className="h-full flex flex-col space-y-6">
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -411,13 +425,24 @@ const Kanban = ({ user }) => {
             <Plus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} placeholder="Add a new task..." className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-slate-700" />
           </div>
+          <select
+            value={newEnergy}
+            onChange={(e) => setNewEnergy(e.target.value)}
+            className="px-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600 text-sm font-medium"
+          >
+            <option value="low">Low Energy</option>
+            <option value="medium">Medium Energy</option>
+            <option value="high">High Energy</option>
+          </select>
           <button type="submit" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 font-medium shadow-sm transition-all hover:shadow-md">Add Task</button>
         </form>
       </div>
       <div className="flex-1 flex gap-6 overflow-x-auto pb-4 px-1">
-        <KanbanColumn title="To Do" status="todo" tasks={tasks.filter(t => t.status === 'todo')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
-        <KanbanColumn title="In Progress" status="doing" tasks={tasks.filter(t => t.status === 'doing')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
-        <KanbanColumn title="Done" status="done" tasks={tasks.filter(t => t.status === 'done')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
+        <KanbanColumn title="To Do" status="todo" tasks={filteredTasks.filter(t => t.status === 'todo')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
+        <KanbanColumn title="In Progress" status="doing" tasks={filteredTasks.filter(t => t.status === 'doing')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
+        <KanbanColumn title="Waiting On" status="waiting" tasks={filteredTasks.filter(t => t.status === 'waiting')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
+        <KanbanColumn title="Done" status="done" tasks={filteredTasks.filter(t => t.status === 'done')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
+        <KanbanColumn title="Anti-Goal (Not Doing)" status="not-doing" tasks={filteredTasks.filter(t => t.status === 'not-doing')} user={user} onDrop={handleDrop} onDragStart={handleDragStart} />
       </div>
     </div>
   );
@@ -743,11 +768,195 @@ const BreathingBox = () => {
   );
 };
 
+const ShutdownRitual = ({ user, onClose }) => {
+  const [step, setStep] = useState(0);
+  const [tomorrowTasks, setTomorrowTasks] = useState(['', '', '']);
+
+  const handleTaskChange = (index, value) => {
+    const newTasks = [...tomorrowTasks];
+    newTasks[index] = value;
+    setTomorrowTasks(newTasks);
+  };
+
+  const completeRitual = async () => {
+    if (user) {
+      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'shutdowns'), {
+        date: serverTimestamp(),
+        tomorrowTasks
+      });
+    }
+    onClose();
+  };
+
+  return (
+    <div className='fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center p-4'>
+      <div className='bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl'>
+        <h2 className='text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2'><Moon size={24} className='text-indigo-600' /> Shutdown Ritual</h2>
+        {step === 0 && (
+          <div className='space-y-6'>
+            <p className='text-slate-600'>Let's close out the day. Clear your mind and your workspace.</p>
+            <div className='space-y-4'>
+              <label className='flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors'>
+                <input type='checkbox' className='w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500' />
+                <span className='font-medium text-slate-700'>Clear physical desktop</span>
+              </label>
+              <label className='flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors'>
+                <input type='checkbox' className='w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500' />
+                <span className='font-medium text-slate-700'>Close all browser tabs</span>
+              </label>
+            </div>
+            <button onClick={() => setStep(1)} className='w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors'>Next: Plan Tomorrow</button>
+          </div>
+        )}
+        {step === 1 && (
+          <div className='space-y-6'>
+            <p className='text-slate-600'>What are your Big 3 for tomorrow?</p>
+            <div className='space-y-3'>
+              {tomorrowTasks.map((task, i) => (
+                <input key={i} type='text' value={task} onChange={(e) => handleTaskChange(i, e.target.value)} placeholder={`Task ${i + 1}`} className='w-full p-3 bg-slate-50 rounded-xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all' />
+              ))}
+            </div>
+            <button onClick={completeRitual} className='w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors'>Complete Shutdown</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+const Cockpit = ({ user, energyLevel, setEnergyLevel, dailyCount, setActiveTab, onShutdown }) => {
+  const [greeting, setGreeting] = useState('');
+  const [randomNote, setRandomNote] = useState(null);
+  const [notes, setNotes] = useState([]);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good Morning');
+    else if (hour < 18) setGreeting('Good Afternoon');
+    else setGreeting('Good Evening');
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'notes'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedNotes = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNotes(fetchedNotes);
+      if (fetchedNotes.length > 0 && !randomNote) {
+        setRandomNote(fetchedNotes[Math.floor(Math.random() * fetchedNotes.length)]);
+      }
+    });
+    return unsubscribe;
+  }, [user]);
+
+  const shuffleNote = () => {
+    if (notes.length > 0) {
+      setRandomNote(notes[Math.floor(Math.random() * notes.length)]);
+    }
+  };
+
+  const getEnergyLabel = (level) => {
+    if (level <= 3) return { text: 'Low Battery', color: 'text-red-500', bg: 'bg-red-50' };
+    if (level <= 7) return { text: 'Stable', color: 'text-amber-500', bg: 'bg-amber-50' };
+    return { text: 'Fully Charged', color: 'text-emerald-500', bg: 'bg-emerald-50' };
+  };
+
+  const energyInfo = getEnergyLabel(energyLevel);
+
+  return (
+    <div className="h-full flex flex-col gap-8 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">{greeting}, {user.displayName?.split(' ')[0] || 'Pilot'}</h1>
+          <p className="text-slate-400 mt-1">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <button onClick={onShutdown} className='flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-sm hover:bg-slate-700 transition-colors mr-2'><Power size={18} /> Shutdown</button>
+        <div className='flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100'>
+          <Trophy size={20} className="text-indigo-500" />
+          <span className="font-bold text-slate-700">{dailyCount}</span>
+          <span className="text-slate-400 text-sm">focus sessions</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-6 opacity-5"><Zap size={120} /></div>
+          <div className="relative z-10">
+            <h2 className="text-xl font-bold text-slate-700 mb-2 flex items-center gap-2"><Activity size={20} className="text-indigo-500" /> Energy Levels</h2>
+            <p className="text-slate-400 text-sm mb-8">Adjust your energy to filter tasks and optimize your workflow.</p>
+
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-slate-400 font-medium">Drained</span>
+              <span className={`font-bold ${energyInfo.color} px-3 py-1 rounded-full ${energyInfo.bg} text-sm`}>{energyLevel}/10 • {energyInfo.text}</span>
+              <span className="text-slate-400 font-medium">Hyper</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={energyLevel}
+              onChange={(e) => setEnergyLevel(parseInt(e.target.value))}
+              className="w-full h-4 bg-slate-100 rounded-full appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-700 transition-all"
+            />
+            <div className="flex justify-between mt-2 text-xs text-slate-300 font-mono">
+              <span>1</span><span>5</span><span>10</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl shadow-lg text-white flex flex-col relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity"><FileText size={120} /></div>
+          <div className="relative z-10 flex-1 flex flex-col">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2"><Radio size={20} className="text-emerald-400 animate-pulse" /> Daily Briefing</h2>
+              <button onClick={shuffleNote} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-300 hover:text-white" title="Shuffle Note"><RotateCcw size={16} /></button>
+            </div>
+
+            {randomNote ? (
+              <div className="flex-1 flex flex-col">
+                <h3 className="text-lg font-semibold mb-2 text-emerald-200 line-clamp-1">{randomNote.title || 'Untitled Note'}</h3>
+                <p className="text-slate-300 text-sm leading-relaxed line-clamp-4 mb-4 flex-1">
+                  {randomNote.content || 'No content...'}
+                </p>
+                <div className="mt-auto pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-slate-400">
+                  <Clock size={12} /> Resurfaced from {new Date(randomNote.updatedAt?.seconds * 1000 || Date.now()).toLocaleDateString()}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-slate-500 flex-col gap-2">
+                <FileText size={32} className="opacity-50" />
+                <p>No notes found in your library.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div onClick={() => setActiveTab('pomodoro')} className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-indigo-100 transition-colors group">
+          <div className="p-3 bg-white rounded-xl shadow-sm text-indigo-600 group-hover:scale-110 transition-transform"><Play size={24} fill="currentColor" /></div>
+          <span className="font-semibold text-indigo-900">Start Focus</span>
+        </div>
+        <div onClick={() => setActiveTab('habits')} className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-emerald-100 transition-colors group">
+          <div className="p-3 bg-white rounded-xl shadow-sm text-emerald-600 group-hover:scale-110 transition-transform"><CheckSquare size={24} /></div>
+          <span className='font-semibold text-emerald-900'>Log Habit</span>
+        </div>
+        <div className='bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-slate-100 transition-colors group' onClick={() => alert('Triggering Smart Home Focus Mode...')}>
+          <div className='p-3 bg-white rounded-xl shadow-sm text-slate-600 group-hover:scale-110 transition-transform'><Zap size={24} /></div>
+          <span className='font-semibold text-slate-900'>Smart Home</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- MAIN APP SHELL ---
 
 const App = () => {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('pomodoro');
+  const [activeTab, setActiveTab] = useState('cockpit');
+  const [showShutdown, setShowShutdown] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Persistent Pomodoro State
@@ -759,6 +968,7 @@ const App = () => {
   const [volume, setVolume] = useState(0.5);
   const [showConfetti, setShowConfetti] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
+  const [energyLevel, setEnergyLevel] = useState(5); // 1-10 scale
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -851,8 +1061,9 @@ const App = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'cockpit': return <Cockpit user={user} energyLevel={energyLevel} setEnergyLevel={setEnergyLevel} dailyCount={dailyCount} setActiveTab={setActiveTab} onShutdown={() => setShowShutdown(true)} />;
       case 'pomodoro': return <Pomodoro timeLeft={timeLeft} isActive={isActive} mode={mode} toggleTimer={toggleTimer} resetTimer={resetTimer} switchMode={switchMode} volume={volume} setVolume={setVolume} dailyCount={dailyCount} />;
-      case 'kanban': return <Kanban user={user} />;
+      case 'kanban': return <Kanban user={user} energyLevel={energyLevel} />;
       case 'notes': return <Notes user={user} />;
       case 'habits': return <HabitTracker user={user} />;
       case 'sounds': return <FocusSounds />;
@@ -864,9 +1075,11 @@ const App = () => {
   return (
     <div className="flex h-screen bg-[#f8fafc] font-sans text-slate-900 overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
       <Confetti isActive={showConfetti} />
+      {showShutdown && <ShutdownRitual user={user} onClose={() => setShowShutdown(false)} />}
       <div className="w-24 bg-white flex flex-col items-center py-8 space-y-8 shadow-2xl z-20 border-r border-slate-100">
         <div className="p-3 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl text-white shadow-lg shadow-indigo-200"><Layout size={28} /></div>
         <nav className="flex-1 flex flex-col gap-6 w-full px-3">
+          <NavButton icon={Home} label="Cockpit" active={activeTab === 'cockpit'} onClick={() => setActiveTab('cockpit')} />
           <NavButton icon={RotateCcw} label="Focus" active={activeTab === 'pomodoro'} onClick={() => setActiveTab('pomodoro')} />
           <NavButton icon={Activity} label="Habits" active={activeTab === 'habits'} onClick={() => setActiveTab('habits')} />
           <NavButton icon={GripVertical} label="Kanban" active={activeTab === 'kanban'} onClick={() => setActiveTab('kanban')} />
