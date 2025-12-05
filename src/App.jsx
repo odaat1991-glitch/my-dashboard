@@ -773,24 +773,6 @@ const ShutdownRitual = ({ user, onClose }) => {
   const [tomorrowTasks, setTomorrowTasks] = useState(['', '', '']);
 
   const handleTaskChange = (index, value) => {
-    const newTasks = [...tomorrowTasks];
-    newTasks[index] = value;
-    setTomorrowTasks(newTasks);
-  };
-
-  const completeRitual = async () => {
-    if (user) {
-      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'shutdowns'), {
-        date: serverTimestamp(),
-        tomorrowTasks
-      });
-    }
-    onClose();
-  };
-
-  return (
-    <div className='fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center p-4'>
-      <div className='bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl'>
         <h2 className='text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2'><Moon size={24} className='text-indigo-600' /> Shutdown Ritual</h2>
         {step === 0 && (
           <div className='space-y-6'>
