@@ -273,26 +273,55 @@ const Confetti = ({ isActive }) => {
 // --- COMPONENTS ---
 
 const MiniTimer = ({ timeLeft, isActive, mode, toggleTimer, onExpand }) => {
+  const [isMinimized, setIsMinimized] = useState(false);
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 animate-fade-in flex flex-col items-end gap-2">
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="bg-white p-2 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.1)] border border-slate-200 text-slate-400 hover:text-indigo-600 transition-colors"
+          title="Expand Timer"
+        >
+          <Maximize2 size={16} />
+        </button>
+        <div
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer shadow-[0_4px_20px_rgb(0,0,0,0.15)] transition-all transform hover:scale-105 ${mode === 'work' ? 'bg-indigo-600 text-white' : 'bg-teal-500 text-white'}`}
+          onClick={toggleTimer}
+          title={isActive ? 'Pause' : 'Resume'}
+        >
+          {isActive ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 bg-white p-3 pr-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 flex items-center gap-4 z-50 animate-bounce-in">
+    <div className="fixed bottom-6 right-6 bg-white p-3 pr-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 flex items-center gap-4 z-50 animate-bounce-in">
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${mode === 'work' ? 'bg-indigo-100 text-indigo-600' : 'bg-teal-100 text-teal-600'}`}
         onClick={toggleTimer}
       >
         {isActive ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
       </div>
-      <div className="flex flex-col cursor-pointer" onClick={onExpand}>
+      <div className="flex flex-col cursor-pointer min-w-[60px]" onClick={onExpand}>
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">{mode}</span>
         <span className="text-xl font-mono font-bold text-slate-700 leading-none">{formatTime(timeLeft)}</span>
       </div>
-      <button onClick={onExpand} className="p-2 text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">
-        <Maximize2 size={16} />
-      </button>
+      <div className="flex items-center border-l border-slate-100 pl-2 ml-1">
+        <button onClick={() => setIsMinimized(true)} className="p-2 text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-lg transition-colors" title="Minimize">
+          <Layout size={16} />
+        </button>
+        <button onClick={onExpand} className="p-2 text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-lg transition-colors" title="Full View">
+          <Maximize2 size={16} />
+        </button>
+      </div>
     </div>
   );
 };
@@ -547,9 +576,10 @@ const HabitTracker = ({ user }) => {
   const [newHabit, setNewHabit] = useState('');
   const dates = useMemo(() => {
     const days = [];
-    for (let i = 6; i >= 0; i--) {
+    // Rolling week centered on today: 3 days past, today, 3 days future
+    for (let i = -3; i <= 3; i++) {
       const d = new Date();
-      d.setDate(d.getDate() - i);
+      d.setDate(d.getDate() + i);
       days.push(d.toISOString().split('T')[0]);
     }
     return days;
@@ -773,6 +803,39 @@ const ShutdownRitual = ({ user, onClose }) => {
   const [tomorrowTasks, setTomorrowTasks] = useState(['', '', '']);
 
   const handleTaskChange = (index, value) => {
+    const newTasks = [...tomorrowTasks];
+    newTasks[index] = value;
+    setTomorrowTasks(newTasks);
+  };
+
+  const completeRitual = async () => {
+    if (user) {
+      // Save the shutdown log
+      await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'shutdowns'), {
+        date: serverTimestamp(),
+        tomorrowTasks
+      });
+
+      // Create Kanban tasks for each item
+      const taskPromises = tomorrowTasks
+        .filter(task => task.trim() !== '')
+        .map(task =>
+          addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'kanban'), {
+            content: task,
+            status: 'todo',
+            energy: 'medium',
+            createdAt: serverTimestamp()
+          })
+        );
+
+      await Promise.all(taskPromises);
+    }
+    onClose();
+  };
+
+  return (
+    <div className='fixed inset-0 bg-slate-900/95 z-50 flex items-center justify-center p-4'>
+      <div className='bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl'>
         <h2 className='text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2'><Moon size={24} className='text-indigo-600' /> Shutdown Ritual</h2>
         {step === 0 && (
           <div className='space-y-6'>
@@ -805,7 +868,6 @@ const ShutdownRitual = ({ user, onClose }) => {
     </div>
   );
 };
-
 
 const Cockpit = ({ user, energyLevel, setEnergyLevel, dailyCount, setActiveTab, onShutdown }) => {
   const [greeting, setGreeting] = useState('');
