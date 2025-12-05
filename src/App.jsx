@@ -717,55 +717,91 @@ const FocusSounds = () => {
 };
 
 const BreathingBox = () => {
-  const [phase, setPhase] = useState('inhale'); // inhale, hold-in, exhale, hold-out
+  const BREATHING_TECHNIQUES = {
+    'box': {
+      name: 'Box Breathing',
+      steps: [
+        { phase: 'inhale', duration: 4000, text: 'Breathe In' },
+        { phase: 'hold-in', duration: 4000, text: 'Hold' },
+        { phase: 'exhale', duration: 4000, text: 'Breathe Out' },
+        { phase: 'hold-out', duration: 4000, text: 'Hold' }
+      ],
+      description: 'Inhale 4s, Hold 4s, Exhale 4s, Hold 4s. Reduces stress and improves focus.'
+    },
+    '4-7-8': {
+      name: '4-7-8 Relaxing',
+      steps: [
+        { phase: 'inhale', duration: 4000, text: 'Breathe In' },
+        { phase: 'hold-in', duration: 7000, text: 'Hold' },
+        { phase: 'exhale', duration: 8000, text: 'Breathe Out' }
+      ],
+      description: 'Inhale 4s, Hold 7s, Exhale 8s. Promotes deep relaxation and sleep.'
+    },
+    'coherence': {
+      name: 'Coherence',
+      steps: [
+        { phase: 'inhale', duration: 6000, text: 'Breathe In' },
+        { phase: 'exhale', duration: 6000, text: 'Breathe Out' }
+      ],
+      description: 'Inhale 6s, Exhale 6s. Balances the nervous system.'
+    }
+  };
+
+  const [activeTechniqueKey, setActiveTechniqueKey] = useState('box');
+  const activeTechnique = BREATHING_TECHNIQUES[activeTechniqueKey];
+
+  const [phase, setPhase] = useState('inhale');
   const [text, setText] = useState('Breathe In');
 
   useEffect(() => {
-    let timeout;
+    let timeoutId;
+    let isMounted = true;
 
-    const runCycle = () => {
-      // Inhale (4s)
-      setPhase('inhale');
-      setText('Breathe In');
+    const runStep = (stepIndex) => {
+      if (!isMounted) return;
 
-      timeout = setTimeout(() => {
-        // Hold (4s)
-        setPhase('hold-in');
-        setText('Hold');
+      const steps = activeTechnique.steps;
+      const currentStep = steps[stepIndex];
+      const nextStepIndex = (stepIndex + 1) % steps.length;
 
-        timeout = setTimeout(() => {
-          // Exhale (4s)
-          setPhase('exhale');
-          setText('Breathe Out');
+      setPhase(currentStep.phase);
+      setText(currentStep.text);
 
-          timeout = setTimeout(() => {
-            // Hold (4s)
-            setPhase('hold-out');
-            setText('Hold');
-
-            timeout = setTimeout(() => {
-              runCycle();
-            }, 4000);
-          }, 4000);
-        }, 4000);
-      }, 4000);
+      timeoutId = setTimeout(() => {
+        runStep(nextStepIndex);
+      }, currentStep.duration);
     };
 
-    runCycle();
+    // Start with the first step
+    runStep(0);
 
-    return () => clearTimeout(timeout);
-  }, []);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [activeTechniqueKey]); // Re-run when technique changes
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-white rounded-3xl shadow-sm border border-slate-100 p-8 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-blue-50 opacity-50"></div>
 
-      <div className="relative z-10 flex flex-col items-center">
-        <h2 className="text-2xl font-bold text-slate-700 mb-12 flex items-center gap-2">
-          <CloudRain className="text-cyan-500" /> Box Breathing
-        </h2>
+      <div className="relative z-10 flex flex-col items-center w-full">
+        <div className="flex items-center justify-between w-full max-w-sm mb-8 px-4">
+          <h2 className="text-xl font-bold text-slate-700 flex items-center gap-2">
+            <CloudRain className="text-cyan-500" size={24} /> Breathing
+          </h2>
+          <select
+            value={activeTechniqueKey}
+            onChange={(e) => setActiveTechniqueKey(e.target.value)}
+            className="bg-white border border-slate-200 text-slate-600 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2 outline-none shadow-sm"
+          >
+            {Object.entries(BREATHING_TECHNIQUES).map(([key, tech]) => (
+              <option key={key} value={key}>{tech.name}</option>
+            ))}
+          </select>
+        </div>
 
-        <div className="relative flex items-center justify-center w-80 h-80">
+        <div className="relative flex items-center justify-center w-72 h-72">
           {/* Outer Guide Circle */}
           <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
 
@@ -773,12 +809,19 @@ const BreathingBox = () => {
           <div
             className={`
               w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-xl shadow-cyan-200
-              flex items-center justify-center transition-all duration-[4000ms] ease-in-out
-              ${phase === 'inhale' ? 'scale-100 opacity-100' : ''}
-              ${phase === 'hold-in' ? 'scale-100 opacity-100' : ''}
-              ${phase === 'exhale' ? 'scale-50 opacity-80' : ''}
-              ${phase === 'hold-out' ? 'scale-50 opacity-80' : ''}
+              flex items-center justify-center transition-all ease-in-out
+              ${phase === 'inhale' ? 'scale-100 opacity-100 duration-[4000ms]' : ''}
+              ${phase === 'hold-in' ? 'scale-100 opacity-100 duration-0' : ''} 
+              /* hold-in duration 0 ensures it stays expanded immediately */
+              
+              ${phase === 'exhale' ? 'scale-50 opacity-80 duration-[4000ms] transition-transform' : ''}
+              /* For techniques with custom exhale durations, we might need inline styles if we want perfect match, 
+                 but CSS transition duration is fixed classes. 
+                 To make it dynamic, we can use inline styles for transitionDuration */
             `}
+            style={{
+              transitionDuration: `${activeTechnique.steps.find(s => s.phase === phase)?.duration}ms`
+            }}
           >
             <span className="text-4xl font-bold text-white tracking-wider animate-pulse">
               {text}
@@ -789,9 +832,8 @@ const BreathingBox = () => {
           <div className={`absolute w-full h-full rounded-full border-2 border-transparent border-t-cyan-300 animate-spin-slow opacity-30`}></div>
         </div>
 
-        <p className="mt-12 text-slate-400 max-w-md text-center">
-          Follow the rhythm: Inhale for 4s, Hold for 4s, Exhale for 4s, Hold for 4s.
-          This technique helps reduce stress and improve focus.
+        <p className="mt-10 text-slate-400 max-w-md text-center text-sm">
+          {activeTechnique.description}
         </p>
       </div>
     </div>
