@@ -1110,7 +1110,7 @@ const App = () => {
       case 'kanban': return <Kanban user={user} energyLevel={energyLevel} />;
       case 'notes': return <Notes user={user} />;
       case 'habits': return <HabitTracker user={user} />;
-      case 'sounds': return <FocusSounds />;
+      // case 'sounds': return <FocusSounds />; // Rendered persistently below
       case 'breathing': return <BreathingBox />;
       default: return null;
     }
@@ -1143,7 +1143,14 @@ const App = () => {
           <div><h1 className="text-2xl font-bold text-slate-800 capitalize tracking-tight">{activeTab === 'sounds' ? 'Focus Sounds' : activeTab}</h1><p className="text-xs text-slate-400 font-medium mt-1"> Productivity Dashboard v2.1</p></div>
           <div className="flex items-center gap-3 text-xs font-semibold bg-slate-100 px-3 py-1.5 rounded-full text-slate-500"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>Syncing to Cloud</div>
         </header>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 scroll-smooth"><div className="max-w-7xl mx-auto h-full">{renderContent()}</div></div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 scroll-smooth">
+          <div className="max-w-7xl mx-auto h-full">
+            {renderContent()}
+            <div style={{ display: activeTab === 'sounds' ? 'block' : 'none', height: '100%' }}>
+              <FocusSounds />
+            </div>
+          </div>
+        </div>
         {activeTab !== 'pomodoro' && <MiniTimer timeLeft={timeLeft} isActive={isActive} mode={mode} toggleTimer={toggleTimer} onExpand={() => setActiveTab('pomodoro')} />}
       </main>
     </div>
