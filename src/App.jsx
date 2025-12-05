@@ -801,7 +801,7 @@ const BreathingBox = () => {
           </select>
         </div>
 
-        <div className="relative flex items-center justify-center w-72 h-72">
+        <div className="relative flex items-center justify-center w-80 h-80">
           {/* Outer Guide Circle */}
           <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
 
@@ -810,17 +810,11 @@ const BreathingBox = () => {
             className={`
               w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-xl shadow-cyan-200
               flex items-center justify-center transition-all ease-in-out
-              ${phase === 'inhale' ? 'scale-100 opacity-100 duration-[4000ms]' : ''}
-              ${phase === 'hold-in' ? 'scale-100 opacity-100 duration-0' : ''} 
-              /* hold-in duration 0 ensures it stays expanded immediately */
-              
-              ${phase === 'exhale' ? 'scale-50 opacity-80 duration-[4000ms] transition-transform' : ''}
-              /* For techniques with custom exhale durations, we might need inline styles if we want perfect match, 
-                 but CSS transition duration is fixed classes. 
-                 To make it dynamic, we can use inline styles for transitionDuration */
+              ${(phase === 'inhale' || phase === 'hold-in') ? 'scale-100 opacity-100' : ''}
+              ${(phase === 'exhale' || phase === 'hold-out') ? 'scale-50 opacity-80' : ''}
             `}
             style={{
-              transitionDuration: `${activeTechnique.steps.find(s => s.phase === phase)?.duration}ms`
+              transitionDuration: `${activeTechnique.steps.find(s => s.phase === phase)?.duration || 4000}ms`
             }}
           >
             <span className="text-4xl font-bold text-white tracking-wider animate-pulse">
