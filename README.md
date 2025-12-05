@@ -1,16 +1,36 @@
-# React + Vite
+# Productivity Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive, all-in-one productivity dashboard designed to help you organize your life, improve focus, and build better habits. Built with React, Tailwind CSS, and Firebase.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **Cockpit**: Your central command center. View your energy levels, daily focus stats, and get a quick overview of your day. Includes a shutdown ritual to help you disconnect.
+*   **Focus Timer (Pomodoro)**: A customizable timer with work/break modes, visual progress ring, and integrated sound notifications. Tracks your daily focus sessions.
+*   **Kanban Board**: A drag-and-drop task management system. Organize tasks by status (To Do, In Progress, Waiting, Done) and filter by energy level required.
+*   **Habit Tracker**: Track your daily habits with a rolling weekly view. Visualize your streaks and weekly consistency.
+*   **Notes**: A markdown-supported note-taking app with code block syntax highlighting. Import/export notes and organize your thoughts.
+*   **Focus Sounds**: A built-in ambient noise generator (White, Pink, Brown noise, Rain, Wind Chimes) and integrated SoundCloud player for Lo-Fi beats.
+*   **Breathing Box**: A mindfulness tool with guided breathing techniques (Box Breathing, 4-7-8, Coherence) to reduce stress and improve focus.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **Frontend**: React (Vite), Tailwind CSS
+*   **Backend/Persistence**: Firebase (Firestore, Auth)
+*   **Icons**: Lucide React
+*   **Deployment**: GitHub Pages
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1.  Clone the repository.
+2.  Install dependencies: `npm install`
+3.  Start the development server: `npm run dev`
+4.  Build for production: `npm run build`
+
+## Project Structure
+
+*   `src/App.jsx`: Main application logic and component definitions.
+*   `src/index.css`: Tailwind imports and global styles.
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
